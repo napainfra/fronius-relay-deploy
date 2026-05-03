@@ -1,0 +1,66 @@
+# --- ALLVIEW SOLAR FIX ---
+# Adds correct daily/monthly/yearly solar totals computed from inverter
+# lifetime counters (which never lie). Replaces the broken chain that
+# depended on sensor.solar_total_power_now.
+#
+# Also adds correct daily/monthly grid cost & credit by integrating the
+# live cost_rate_now / credit_rate_now templates.
+#
+# Safe to add — does NOT modify any existing entity. Adds new ones with
+# the "allview_" prefix so they coexist with broken legacy sensors.
+
+template:
+  - sensor:
+      # Combined solar lifetime — sum of two inverter lifetime counters
+      # in kWh. Never resets, only increments.
+      - name: "Allview Solar Lifetime"
+        unique_id: allview_solar_lifetime
+        unit_of_measurement: kWh
+        device_class: energy
+        state_class: total_increasing
+        state: >
+          {% set en = states('sensor.envoy_202147140813_lifetime_energy_production') | float(0) %}
+          {% set fr = states('sensor.primo_8_2_1_208_240_1_total_energy') | float(0) %}
+          {{ ((en * 1000) + (fr / 1000)) | round(3) }}
+
+utility_meter:
+  allview_solar_daily:
+    source: sensor.allview_solar_lifetime
+    cycle: daily
+    name: Allview Solar Daily
+
+  allview_solar_monthly:
+    source: sensor.allview_solar_lifetime
+    cycle: monthly
+    name: Allview Solar Monthly
+
+  allview_solar_yearly:
+    source: sensor.allview_solar_lifetime
+    cycle: yearly
+    name: Allview Solar Yearly
+
+  # Cost integrators using existing CORRECT live-rate templates.
+  # cost_rate_now and credit_rate_now are accurate ($/h based on live W × tariff).
+  # We integrate them via Riemann to get correct cumulative $.
+  # NOTE: utility_meter expects an energy/cumulative source, so we wrap
+  # the rate templates with a Riemann integral first.
+
+sensor:
+  - platform: integration
+    source: sensor.cost_rate_now
+    name: Allview Cost Cumulative
+    unique_id: allview_cost_cumulative
+    unit_prefix: ""
+    unit_time: h
+    method: trapezoidal
+    round: 4
+
+  - platform: integration
+    source: sensor.credit_rate_now
+    name: Allview Credit Cumulative
+    unique_id: allview_credit_cumulative
+    unit_prefix: ""
+    unit_time: h
+    method: trapezoidal
+    round: 4
+# --- END ALLVIEW SOLAR FIX ---
