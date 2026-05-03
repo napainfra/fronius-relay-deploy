@@ -8,7 +8,7 @@ set -e
 CFG=/config/configuration.yaml
 PKG_DIR=/config/packages
 PKG_FILE=$PKG_DIR/allview_solar_fix.yaml
-RAW=https://raw.githubusercontent.com/napainfra/fronius-relay-deploy/cbd07e3478a5350dd3577c3274e4b7f6a109293a/allview_solar_fix.yaml
+RAW=https://raw.githubusercontent.com/napainfra/fronius-relay-deploy/b97ab8e7f12efd73013faf81d49a2d79b67bb333/allview_solar_fix.yaml
 
 echo "==> Step 1: ensure $PKG_DIR exists"
 mkdir -p "$PKG_DIR"
